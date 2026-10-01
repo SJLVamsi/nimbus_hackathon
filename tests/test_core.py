@@ -145,6 +145,66 @@ class CoreFlowTest(unittest.TestCase):
         pick = core.next_for("lab")
         self.assertIsNone(pick["patient"])
 
+    def test_routed_rejected_from_active_states(self):
+        core.create_patient("T11", "Test", "walkin", "fever")
+        core.advance("T11", "ROUTED", payload={"queue": "triage"})
+        core.advance("T11", "CALLED", actor="nurse")
+        with self.assertRaises(ValueError):
+            core.advance("T11", "ROUTED", payload={"queue": "reception"})
+
+    def test_reroute_allowed_between_waiting_states(self):
+        core.create_patient("T12", "Test", "walkin", "report query")
+        core.advance("T12", "ROUTED", payload={"queue": "clinician"})
+        patient = core.advance("T12", "ROUTED", payload={"queue": "reception"})
+        self.assertEqual(patient["state"], "WAITING_RECEPTION")
+
+    def test_notify_fails_outside_pickup(self):
+        core.create_patient("T13", "Test", "walkin", "fever")
+        core.advance("T13", "ROUTED", payload={"queue": "triage"})
+        result = tools.dispatch("notify_patient", {"patient_id": "T13"})
+        self.assertFalse(result["ok"])
+
+    def test_idle_alert_clears_when_doctor_busy(self):
+        self._to_review("T14")
+        with db.tx() as conn:
+            conn.execute(
+                "UPDATE patients SET owner='clinician', state='WAITING_CONSULT',"
+                " entered_state_at=? WHERE id='T14'",
+                (ago(25),),
+            )
+        core.refresh()
+        self.assertTrue(
+            any(
+                a["kind"] == "IDLE_OWNER" and a["patient_id"] == "T14"
+                for a in core.get_alerts(status="open")
+            )
+        )
+        with db.tx() as conn:
+            conn.execute(
+                "UPDATE patients SET owner='clinician', state='IN_CONSULT',"
+                " entered_state_at=? WHERE id='T14'",
+                (ago(2),),
+            )
+        core.refresh()
+        self.assertFalse(
+            any(
+                a["kind"] == "IDLE_OWNER" and a["patient_id"] == "T14"
+                for a in core.get_alerts(status="open")
+            )
+        )
+
+    def test_reset_requires_confirm(self):
+        from fastapi.testclient import TestClient
+
+        from api.main import app as fastapi_app
+
+        with TestClient(fastapi_app) as client:
+            denied = client.post("/api/sim/reset", json={})
+            self.assertEqual(denied.status_code, 400)
+            allowed = client.post("/api/sim/reset", json={"confirm": True})
+            self.assertEqual(allowed.status_code, 200)
+            self.assertIn("P12", allowed.json().get("flagged", []))
+
 
 if __name__ == "__main__":
     unittest.main()

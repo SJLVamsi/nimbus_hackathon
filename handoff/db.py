@@ -106,5 +106,7 @@ def reset_db() -> None:
 
 
 def table_count(table: str) -> int:
+    if table not in ("events", "patients", "handoffs", "alerts"):
+        raise ValueError(f"Unknown table {table}")
     with tx() as conn:
         return conn.execute(f"SELECT COUNT(*) n FROM {table}").fetchone()["n"]

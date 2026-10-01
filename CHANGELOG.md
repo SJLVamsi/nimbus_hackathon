@@ -99,3 +99,29 @@ without a commit.
 - Backup demo video recording.
 - Stretch only if green: rolling ETA refinement, WhatsApp/SMS webhook,
   multi-day trends, voice intake.
+
+## 2026-10-01 — reviewer-driven hardening (pre-push review verdict: "with fixes")
+- Pinned `mcp>=2.0` (code uses the v2 `MCPServer` import; 1.x floor was wrong).
+- `POST /api/patients/{id}/notify` now returns HTTP 400 on failure instead of
+  `{"ok": false}` with 200; dashboard checks `result.ok` before the sent toast.
+- `POST /api/sim/reset` requires `{confirm: true}` plus a UI confirm dialog,
+  so stray requests can't wipe the demo mid-pitch.
+- `advance` tool docstring lists the full event vocabulary
+  (ROUTED/CALLED/STARTED/COMPLETED/LAB_ORDERED/LAB_RESULT_READY/
+  REPORT_FIX_REQUESTED/REPORT_FIXED/MARK_READY/NOTIFIED/PICKED_UP/
+  HANDOFF_ACCEPTED/ESCALATION_ACCEPTED).
+- Added the promised `clinic://snapshot` MCP resource (KPIs, open patients,
+  alerts, handoffs, bottlenecks); verified via `read_resource`.
+- `--selftest` now exercises all 11 tools on an isolated temp DB. Found and
+  fixed a real bug: MCP SDK v2 stdio passes only an allowlisted env, so
+  `HANDOFF_DB` never reached the server subprocess — the client now forwards it
+  explicitly. (The first selftest run had polluted the demo DB with a scratch
+  patient; reseeded clean afterwards.)
+- `ROUTED` rejected from active/done states (re-routing still allowed between
+  waiting states, e.g. fixing a misroute); `timeline()` returns the latest N
+  events; open `IDLE_OWNER` alerts clear when a consultation resumes; orphaned
+  `ARRIVED` patients now appear in the Front desk column.
+- `provider()` requires an actual API key for live mode; intake `mode` stays
+  `fallback` when the LLM call fails; `table_count` allowlisted.
+- 5 new tests (16 total, all passing): routed guard, allowed re-route,
+  notify-outside-pickup, idle-alert clearing, reset-confirm via TestClient.

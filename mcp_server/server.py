@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from mcp.server.mcpserver import MCPServer  # noqa: E402
 
+from handoff import core, metrics  # noqa: E402
 from handoff.tools import dispatch  # noqa: E402
 
 mcp = MCPServer(
@@ -68,7 +69,7 @@ def explain_wait(patient_id: str, language: str = "en") -> str:
 
 @mcp.tool()
 def advance(patient_id: str, event_type: str, actor: str | None = None, notes: str | None = None) -> str:
-    """Record a workflow event: CALLED, STARTED, COMPLETED, LAB_ORDERED, LAB_RESULT_READY, REPORT_FIX_REQUESTED, REPORT_FIXED, MARK_READY, PICKED_UP."""
+    """Record a workflow event for a patient. Valid events: ROUTED (queues: triage|reception|report|doc_fix|clinician), CALLED, STARTED, COMPLETED, LAB_ORDERED, LAB_RESULT_READY, REPORT_FIX_REQUESTED, REPORT_FIXED, MARK_READY, NOTIFIED, PICKED_UP, HANDOFF_ACCEPTED (accept a review/handoff), ESCALATION_ACCEPTED (unblock a flagged patient). INTERRUPTION is logged automatically from the patient page."""
     return _run(
         "advance",
         {"patient_id": patient_id, "event_type": event_type, "actor": actor, "notes": notes},
@@ -91,6 +92,22 @@ def notify_patient(patient_id: str, channel: str = "sms") -> str:
 def register_patient(name: str, reason: str) -> str:
     """Register a new patient from a free-text reason, classifying the right queue automatically."""
     return _run("register_patient", {"name": name, "reason": reason})
+
+
+@mcp.resource("clinic://snapshot")
+def snapshot() -> str:
+    """Full current clinic state: KPIs, open patients, alerts, handoffs, bottlenecks."""
+    core.refresh()
+    return json.dumps(
+        {
+            "kpis": metrics.kpis(),
+            "patients": core.get_queue(status="open"),
+            "alerts": core.get_alerts(status="open"),
+            "handoffs": [h for h in core.list_handoffs() if h["status"] in ("open", "dropped")],
+            "bottlenecks": metrics.bottlenecks(240),
+        },
+        default=str,
+    )
 
 
 if __name__ == "__main__":

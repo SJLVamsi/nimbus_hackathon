@@ -429,15 +429,20 @@ def refresh():
                         f"{patient['name']} ({patient['id']}) has waited {waited:.0f} min for the doctor,"
                         " but no consultation is in progress",
                     )
+        else:
+            conn.execute(
+                "UPDATE alerts SET status='resolved', resolved_at=? WHERE kind='IDLE_OWNER' AND status!='resolved'",
+                (now_iso(),),
+            )
     return newly_flagged
 
 
 def timeline(patient_id, limit=60):
     with tx() as conn:
         rows = conn.execute(
-            "SELECT * FROM events WHERE patient_id=? ORDER BY id ASC LIMIT ?", (patient_id, limit)
+            "SELECT * FROM events WHERE patient_id=? ORDER BY id DESC LIMIT ?", (patient_id, limit)
         ).fetchall()
-    return [_humanize_event(r) for r in rows]
+    return [_humanize_event(r) for r in reversed(rows)]
 
 
 def _humanize_event(row):

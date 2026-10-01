@@ -1,7 +1,7 @@
 const $ = (sel) => document.querySelector(sel);
 
 const COLUMNS = [
-  { id: "reception", title: "Front desk", states: ["WAITING_RECEPTION", "WAITING_DOC_FIX", "READY_FOR_PICKUP"] },
+  { id: "reception", title: "Front desk", states: ["ARRIVED", "WAITING_RECEPTION", "WAITING_DOC_FIX", "READY_FOR_PICKUP"] },
   { id: "flagged", title: "Flagged — no owner", states: [] },
   { id: "nurse", title: "Nurse", states: ["WAITING_TRIAGE", "IN_TRIAGE"] },
   { id: "clinician", title: "Doctor", states: ["WAITING_CONSULT", "IN_CONSULT", "WAITING_REPORT_REVIEW"] },
@@ -264,6 +264,7 @@ async function openPatient(pid) {
         try {
           if (action.action === "notify") {
             const result = await api(`/api/patients/${pid}/notify`, { method: "POST", body: action.payload || {} });
+            if (!result.ok) throw new Error(result.error || "Notify failed");
             toast(`SMS sent: ${result.message}`);
           } else {
             await api(`/api/patients/${pid}/event`, {
@@ -370,7 +371,8 @@ function bind() {
   });
 
   $("#reset-btn").onclick = async () => {
-    await api("/api/sim/reset", { method: "POST" });
+    if (!window.confirm("Reset the demo day? This wipes the current queue.")) return;
+    await api("/api/sim/reset", { method: "POST", body: { confirm: true } });
     toast("Demo day reset.");
     refresh();
   };

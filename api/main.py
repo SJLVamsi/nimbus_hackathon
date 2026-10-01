@@ -79,6 +79,10 @@ class AskBody(BaseModel):
     question: str
 
 
+class ResetBody(BaseModel):
+    confirm: bool = False
+
+
 class InterruptionBody(BaseModel):
     at_role: str = "reception"
     note: str = ""
@@ -154,7 +158,10 @@ async def patient_event(patient_id: str, body: EventBody):
 
 @app.post("/api/patients/{patient_id}/notify")
 async def notify(patient_id: str, body: NotifyBody):
-    return tools.dispatch("notify_patient", {"patient_id": patient_id, "channel": body.channel})
+    result = tools.dispatch("notify_patient", {"patient_id": patient_id, "channel": body.channel})
+    if not result.get("ok"):
+        raise ValueError(result.get("error") or "Notify failed")
+    return result
 
 
 @app.post("/api/patients/{patient_id}/interruption")
@@ -179,5 +186,7 @@ async def ask(body: AskBody):
 
 
 @app.post("/api/sim/reset")
-async def reset():
+async def reset(body: ResetBody):
+    if not body.confirm:
+        raise ValueError("Reset requires {confirm: true} — it wipes the clinic day")
     return seed_demo()

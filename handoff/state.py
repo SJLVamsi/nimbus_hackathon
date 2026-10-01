@@ -109,6 +109,8 @@ CLINICAL_ACTIVE_STATES = {IN_TRIAGE, IN_CONSULT}
 def transition(state, etype, payload):
     payload = payload or {}
     if etype == "ROUTED":
+        if state != ARRIVED and state not in WAITING_STATES:
+            return None
         target = {
             "triage": WAITING_TRIAGE,
             "reception": WAITING_RECEPTION,

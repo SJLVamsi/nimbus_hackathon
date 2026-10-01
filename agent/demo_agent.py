@@ -2,8 +2,14 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import sys
 from pathlib import Path
+
+if "--selftest" in sys.argv:
+    import tempfile
+
+    os.environ["HANDOFF_DB"] = os.path.join(tempfile.mkdtemp(prefix="handoff-selftest-"), "selftest.db")
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -60,8 +66,9 @@ def _to_openai_tools(mcp_tools):
 
 
 async def run(question, selftest=False):
+    server_env = {"HANDOFF_DB": os.environ.get("HANDOFF_DB", str(ROOT / "handoff.db"))}
     params = StdioServerParameters(
-        command=sys.executable, args=[str(SERVER)], cwd=str(ROOT)
+        command=sys.executable, args=[str(SERVER)], cwd=str(ROOT), env=server_env
     )
     async with stdio_client(params) as (read, write):
         async with ClientSession(read, write) as session:
@@ -70,13 +77,47 @@ async def run(question, selftest=False):
             tools = listed.tools
             print(f"MCP server connected — {len(tools)} tools: {', '.join(t.name for t in tools)}")
             if selftest:
-                for name, args in (
-                    ("get_queue", {"status": "open"}),
-                    ("list_missed_handoffs", {}),
-                    ("list_bottlenecks", {"window_minutes": 240}),
-                ):
+                from handoff import db as db_module
+
+                db_module.init_db()
+
+                async def call(name, args):
                     result = _extract(await session.call_tool(name, arguments=args))
                     print(f"  {name} -> {_summarize(result)}")
+                    if not result.get("ok", True):
+                        raise RuntimeError(f"selftest failed at {name}: {result}")
+                    return result
+
+                registered = await call(
+                    "register_patient", {"name": "Selftest Sam", "reason": "fever and cough"}
+                )
+                pid = registered["patient_id"]
+                for event, actor in (
+                    ("CALLED", "nurse"),
+                    ("COMPLETED", "nurse"),
+                    ("CALLED", "clinician"),
+                    ("LAB_ORDERED", "clinician"),
+                    ("STARTED", "lab"),
+                    ("LAB_RESULT_READY", "lab"),
+                ):
+                    await call("advance", {"patient_id": pid, "event_type": event, "actor": actor})
+                await call("get_queue", {"status": "open"})
+                fetched = await call("get_patient", {"patient_id": pid})
+                await call("next_for", {"role": "clinician"})
+                await call("list_bottlenecks", {"window_minutes": 240})
+                await call("list_missed_handoffs", {})
+                await call("staff_interruptions", {"window_minutes": 1440})
+                await call("explain_wait", {"patient_id": pid})
+                open_handoffs = [
+                    h
+                    for h in fetched["patient"]["handoffs"]
+                    if h["status"] in ("open", "dropped")
+                ]
+                await call(
+                    "accept_handoff", {"handoff_id": open_handoffs[-1]["id"], "by": "clinician"}
+                )
+                await call("notify_patient", {"patient_id": pid, "channel": "sms"})
+                print("selftest: all 11 tools OK")
                 return
 
             trace = []

@@ -22,7 +22,7 @@ def _anthropic_model():
 def provider():
     if os.getenv("ANTHROPIC_API_KEY"):
         return "anthropic"
-    if os.getenv("OPENAI_API_KEY") or os.getenv("OPENAI_BASE_URL"):
+    if os.getenv("OPENAI_API_KEY"):
         return "openai"
     return "fallback"
 
@@ -343,7 +343,7 @@ def classify_intake(reason, name=""):
         merged["confidence"] = float(parsed.get("confidence", merged["confidence"]))
     except (TypeError, ValueError):
         pass
-    merged["mode"] = "llm"
+    merged["mode"] = "llm" if result.get("content") else "fallback"
     return merged
 
 
