@@ -1,0 +1,48 @@
+{
+  "title": "Handoff demo day",
+  "description": "A synthetic clinic day seeded relative to 'now'. P12 is the hero: misrouted to consultation, lab report unreviewed, handoff dropped, auto-flagged.",
+  "minutes_are_ago": true,
+  "hero": {
+    "patient_id": "P12",
+    "name": "Meera Krishnan",
+    "reason": "Came about my blood report, my name is printed wrong",
+    "story": [
+      "arrived 58 min ago about a report correction",
+      "reception guessed and routed her to consultation (misroute)",
+      "consulted, lab ordered, sample taken, result ready 26 min ago",
+      "doctor never accepted the lab->clinician review handoff (SLA 5 min)",
+      "asked at reception 3 times (interruptions logged)",
+      "watchdog flagged her BLOCKED_NO_OWNER at ~21 min orphan time"
+    ],
+    "expected": {
+      "state": "WAITING_REPORT_REVIEW",
+      "blocked": true,
+      "alert_kind": "DROPPED_HANDOFF",
+      "resolution": "accept handoff -> READY_FOR_PICKUP, alerts clear, waits-with-owner 100%"
+    }
+  },
+  "foreground_cast": [
+    {"id": "P02", "name": "Fatima Sheikh", "type": "report", "now": "NOTIFIED, awaiting pickup"},
+    {"id": "P03", "name": "Arjun Menon", "type": "appointment", "now": "IN_CONSULT"},
+    {"id": "P05", "name": "Divya Nair", "type": "return", "now": "WAITING_DOC_FIX, spelling mistake"},
+    {"id": "P07", "name": "Lakshmi Iyer", "type": "report", "now": "WAITING_RECEPTION, collect scan report"},
+    {"id": "P09", "name": "Suresh Babu", "type": "walkin", "now": "WAITING_CONSULT after triage"},
+    {"id": "P10", "name": "Anjali Verma", "type": "appointment", "now": "WAITING_TRIAGE"},
+    {"id": "P14", "name": "Kiran Rao", "type": "walkin", "now": "WAITING_CONSULT after triage"}
+  ],
+  "background_cast": "10 completed patients (P01,P04,P06,P08,P11,P13,P15,P16,P17,P18) provide stage-duration distributions for p50/p90 and ETAs.",
+  "interruptions_today": 11,
+  "expected_kpis_at_seed": {
+    "active_patients": 8,
+    "blocked": 1,
+    "dropped_handoffs": 1,
+    "interruptions_today": 11
+  },
+  "demo_beats": [
+    "Dashboard: ask 'who is P12 waiting on?' — red flagged card answers.",
+    "Open her modal: full timeline shows misroute + 3 interruptions + flagged event.",
+    "Patient page /patient?pid=P12: plain-language status, ETA, EN/HI toggle.",
+    "Manager agent: 'Where did waiting time go today?' returns bottlenecks + recommendation + tool trace.",
+    "Resolve handoff: watch flagged -> front desk pickup, 86% -> 100% owned, orphan minutes -> 0."
+  ]
+}
