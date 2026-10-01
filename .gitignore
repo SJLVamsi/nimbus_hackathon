@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+handoff.db
+handoff.db-wal
+handoff.db-shm
+.DS_Store
+.playwright-mcp/
