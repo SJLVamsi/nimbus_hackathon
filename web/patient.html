@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Your clinic status — Handoff</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2335d0c0'/><text x='50' y='70' font-size='60' font-family='Arial' font-weight='bold' text-anchor='middle' fill='%2304121a'>H</text></svg>" />
+<link rel="stylesheet" href="/static/style.css" />
+<link rel="stylesheet" href="/static/patient.css" />
+</head>
+<body class="patient-body">
+<header class="patient-top">
+  <div class="brand">
+    <div class="logo">H</div>
+    <div>
+      <h1>Neighborhood Clinic</h1>
+      <p>Live queue status</p>
+    </div>
+  </div>
+  <div class="lang-toggle">
+    <button type="button" data-lang="en" class="active">EN</button>
+    <button type="button" data-lang="hi">हिं</button>
+  </div>
+</header>
+
+<main class="patient-main">
+  <section class="status-card" id="status-card">
+    <div class="token">Token <strong id="pid">—</strong></div>
+    <h1 id="patient-name">Loading…</h1>
+    <p class="state" id="state-label"></p>
+    <div class="wait-row">
+      <div>
+        <span class="big" id="wait-time">—</span>
+        <span class="unit" id="waited-label">waited</span>
+      </div>
+      <div>
+        <span class="big accent" id="eta">—</span>
+        <span class="unit" id="more-label">likely more</span>
+      </div>
+    </div>
+    <div class="explain" id="explain"></div>
+    <div class="action-needed" id="action"></div>
+  </section>
+
+  <section class="panel">
+    <h2 id="journey-title">Your journey</h2>
+    <div class="steps" id="steps"></div>
+  </section>
+
+  <section class="panel">
+    <h2 id="updates-title">Recent updates</h2>
+    <ul class="timeline" id="timeline"></ul>
+  </section>
+
+  <button id="interrupt-btn" class="btn danger wide" type="button">I still don’t know why I’m waiting</button>
+  <p class="privacy" id="interrupt-note">Tapping this tells the front desk to check on you. You do not need to queue again.</p>
+</main>
+
+<div id="toast" class="toast"></div>
+<script src="/static/patient.js"></script>
+</body>
+</html>

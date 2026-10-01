@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Handoff — Clinic Queue</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2335d0c0'/><text x='50' y='70' font-size='60' font-family='Arial' font-weight='bold' text-anchor='middle' fill='%2304121a'>H</text></svg>" />
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">H</div>
+    <div>
+      <h1>Handoff</h1>
+      <p>Every wait has an owner and a reason.</p>
+    </div>
+  </div>
+  <div class="top-actions">
+    <span id="clock" class="clock"></span>
+    <span id="llm-pill" class="pill">…</span>
+    <button class="btn ghost" id="reset-btn">Reset demo</button>
+    <button class="btn primary" id="walkin-btn">+ Walk-in</button>
+  </div>
+</header>
+
+<section class="kpis" id="kpis"></section>
+
+<main class="layout">
+  <section class="board-wrap">
+    <div class="board" id="board"></div>
+  </section>
+  <aside class="side">
+    <section class="panel">
+      <h2>Alerts <span id="alert-count" class="badge danger">0</span></h2>
+      <div id="alerts" class="alerts"></div>
+    </section>
+    <section class="panel">
+      <h2>Next up</h2>
+      <div id="nextup"></div>
+    </section>
+    <section class="panel">
+      <h2>Where time goes</h2>
+      <div id="bottlenecks"></div>
+    </section>
+    <section class="panel">
+      <h2>Ask the manager agent</h2>
+      <div class="chips" id="ask-chips"></div>
+      <div id="ask-log" class="ask-log"></div>
+      <form id="ask-form">
+        <input id="ask-input" placeholder="Where did waiting time go today?" autocomplete="off" />
+        <button class="btn primary" type="submit">Ask</button>
+      </form>
+    </section>
+    <section class="panel muted-panel">
+      <h2>Demo shortcuts</h2>
+      <p>Patient view: <a href="/patient?pid=P12" target="_blank">/patient?pid=P12</a></p>
+      <p>Hero story: <strong>Meera (P12)</strong> waited because a lab→doctor handoff was never accepted. The system flagged it as <em>no owner</em>.</p>
+      <p>Try: ask the agent, then resolve the alert and watch P12 turn green.</p>
+    </section>
+  </aside>
+</main>
+
+<dialog id="patient-modal"><div class="modal-body" id="modal-content"></div></dialog>
+
+<dialog id="walkin-modal">
+  <form class="modal-form" id="walkin-form">
+    <h2>New walk-in</h2>
+    <label>Name
+      <input id="walkin-name" required placeholder="e.g. Asha Rao" />
+    </label>
+    <label>Reason (free text)
+      <textarea id="walkin-reason" required placeholder="e.g. I need my blood report, my name is spelled wrong"></textarea>
+    </label>
+    <div class="modal-actions">
+      <button type="button" class="btn ghost" id="walkin-cancel">Cancel</button>
+      <button type="submit" class="btn primary">Register &amp; classify</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
